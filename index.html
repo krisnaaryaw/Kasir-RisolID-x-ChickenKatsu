@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kasir Katsu & Risol</title>
+    <style>
+        :root {
+            --primary: #ea580c; /* Orange Katsu */
+            --primary-hover: #c2410c;
+            --primary-light: #fff7ed;
+            --bg: #f9fafb;
+            --card: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+            --success: #16a34a;
+        }
+        * { 
+            box-sizing: border-box; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        body { background: var(--bg); color: var(--text); padding-bottom: 90px; }
+        
+        header { background: var(--card); padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 20; }
+        header h1 { font-size: 1.15rem; font-weight: 800; color: var(--primary); }
+        .status-badge { font-size: 0.75rem; background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+
+        .container { padding: 14px; max-width: 700px; margin: 0 auto; }
+        
+        /* Navigation Tabs */
+        .tab-menu { display: flex; gap: 8px; margin-bottom: 16px; background: #f3f4f6; padding: 4px; border-radius: 10px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 8px; font-weight: 700; font-size: 0.85rem; color: #4b5563; cursor: pointer; }
+        .tab-btn.active { background: var(--card); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .page-tab { display: none; }
+        .page-tab.active { display: block; }
+
+        /* Product Cards Grid */
+        .product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        @media (min-width: 500px) { .product-grid { grid-template-columns: repeat(3, 1fr); } }
+
+        .product-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.03); cursor: pointer; transition: all 0.15s; }
+        .product-card:active { transform: scale(0.97); background: var(--primary-light); }
+        .product-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: var(--text); }
+        .product-price { color: var(--primary); font-size: 0.9rem; font-weight: 700; }
+        .product-badge { font-size: 0.7rem; background: #ffedd5; color: #c2410c; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-block; margin-top: 4px; }
+
+        /* Floating Cart Bar */
+        .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -4px 12px rgba(0,0,0,0.05); z-index: 30; }
+        .cart-total { font-size: 1.25rem; font-weight: 800; color: var(--text); }
+        .btn-checkout { background: var(--primary); color: white; border: none; padding: 12px 22px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+
+        /* Modal Popup */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 50; justify-content: center; align-items: flex-end; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; width: 100%; max-width: 500px; border-radius: 20px 20px 0 0; padding: 20px; animation: slideUp 0.2s ease-out; max-height: 88vh; overflow-y: auto; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 700; color: #374151; margin-bottom: 6px; }
+        .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .radio-btn { flex: 1; min-width: 80px; text-align: center; padding: 9px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; background: #fff; }
+        .radio-btn.selected { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+
+        .tier-btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+        .tier-btn { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; background: #f9fafb; }
+        .tier-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; }
+        input:focus, select:focus { border-color: var(--primary); }
+        
+        .btn-full { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: 700; font-size: 0.95rem; margin-top: 8px; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #f3f4f6; color: #4b5563; }
+        .btn-danger { background: #ef4444; color: white; }
+
+        .cart-item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f3f4f6; }
+        .qty-control { display: flex; align-items: center; gap: 8px; }
+        .qty-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: white; font-weight: bold; font-size: 1rem; cursor: pointer; }
+
+        .sauce-item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f9fafb; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; }
+        .card-box { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Kasir Katsu & Risol</h1>
+    <span class="status-badge">● Online POS</span>
+</header>
+
+<div class="container">
+    <div class="tab-menu">
+        <button class="tab-btn active" onclick="switchTab('kasir')">🛒 Kasir</button>
+        <button class="tab-btn" onclick="switchTab('stok')">📦 Kelola Produk & Stok</button>
+        <button class="tab-btn" onclick="switchTab('riwayat')">📜 Riwayat</button>
+    </div>
+
+    <!-- TAB KASIR -->
+    <div id="tab-kasir" class="page-tab active">
+        <div class="product-grid" id="pos-product-grid"></div>
+    </div>
+
+    <!-- TAB KELOLA PRODUK & STOK -->
+    <div id="tab-stok" class="page-tab">
+        <!-- STOK SAUS GRATIS -->
+        <div class="card-box">
+            <h3 style="margin-bottom: 12px; color: var(--primary);">🥫 Stok Saus Gratis (Realtime Sync)</h3>
+            <div id="manage-sauce-list" style="margin-bottom: 12px;"></div>
+            
+            <div style="display:flex; gap:6px; align-items:center;">
+                <input type="text" id="new-sauce-name" placeholder="Nama Saus Baru" style="padding:6px;">
+                <input type="number" id="new-sauce-stock" placeholder="Stok Awal" style="width:100px; padding:6px;">
+                <button class="btn-primary" style="padding:6px 12px; font-size:0.8rem; border-radius:6px; width:auto;" onclick="addNewSauce()">+ Saus</button>
+            </div>
+        </div>
+
+        <!-- DAFTAR PRODUK & PAKET HARGA -->
+        <div class="card-box">
+            <h3 style="margin-bottom: 12px;">📦 Daftar Produk & Kelipatan Harga</h3>
+            <div id="manage-products-list"></div>
+        </div>
+
+        <!-- TAMBAH PRODUK BARU -->
+        <div class="card-box">
+            <h3 style="margin-bottom: 12px; color: var(--primary);">+ Tambah Produk Baru</h3>
+            <div class="form-group">
+                <label>Nama Produk</label>
+                <input type="text" id="new-prod-name" placeholder="Contoh: Katsu Cheese / Risol Bolognese">
+            </div>
+            <div class="form-group">
+                <label>Ada Opsi Saus Gratis?</label>
+                <select id="new-prod-sauce">
+                    <option value="false">Tidak Ada</option>
+                    <option value="true">Ya (Tampilkan Pilihan Saus)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Harga Satuan Standar (Rp)</label>
+                <input type="number" id="new-prod-price" placeholder="15000">
+            </div>
+            <div class="form-group">
+                <label>Stok Awal Produk</label>
+                <input type="number" id="new-prod-stock" value="50">
+            </div>
+            <button class="btn-full btn-primary" onclick="addNewProduct()">Simpan Produk Baru</button>
+        </div>
+    </div>
+
+    <!-- TAB RIWAYAT -->
+    <div id="tab-riwayat" class="page-tab">
+        <div class="card-box">
+            <h3 style="margin-bottom: 12px;">Riwayat Penjualan</h3>
+            <div id="history-container"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Bottom Bar -->
+<div class="cart-bar">
+    <div>
+        <small style="color:#6b7280; display:block;" id="cart-item-count">0 Item Pesanan</small>
+        <span class="cart-total" id="cart-total-price">Rp 0</span>
+    </div>
+    <button class="btn-checkout" onclick="openCartModal()">Keranjang Pesanan</button>
+</div>
+
+<!-- MODAL OPSI PRODUK KASIR -->
+<div class="modal" id="modal-product">
+    <div class="modal-content">
+        <h3 id="modal-product-title" style="margin-bottom:15px; color:var(--primary);">Pilih Opsi</h3>
+        
+        <div class="form-group">
+            <label>Kondisi Produk</label>
+            <div class="radio-group">
+                <div class="radio-btn selected" id="opt-matang" onclick="selectKondisi('Matang')">Matang</div>
+                <div class="radio-btn" id="opt-mentah" onclick="selectKondisi('Mentah')">Mentah</div>
+            </div>
+        </div>
+
+        <div class="form-group" id="tier-selection-group">
+            <label>Daftar Promo / Kelipatan Harga Aktif</label>
+            <div class="tier-btn-group" id="tier-buttons-container"></div>
+            <small id="promo-calc-info" style="color:var(--primary); font-weight:bold; display:block; margin-top:4px;"></small>
+        </div>
+
+        <div class="form-group">
+            <label>Jumlah Porsi / Pcs</label>
+            <div class="qty-control" style="justify-content: flex-start;">
+                <button class="qty-btn" type="button" onclick="adjustModalQty(-1)">-</button>
+                <span id="modal-qty-val" style="font-weight:bold; font-size:1.1rem; padding:0 12px;">1</span>
+                <button class="qty-btn" type="button" onclick="adjustModalQty(1)">+</button>
+            </div>
+        </div>
+
+        <div class="form-group" id="sauce-selection-group" style="display:none;">
+            <label>Pilih Saus Gratis (Bisa Pilih Banyak Varian)</label>
+            <div id="sauce-list-container"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Total Harga Item Ini (Rp)</label>
+            <input type="number" id="input-price">
+        </div>
+
+        <button class="btn-full btn-primary" onclick="confirmAddToCart()">+ Masukkan ke Keranjang</button>
+        <button class="btn-full btn-secondary" onclick="closeModal('modal-product')">Batal</button>
+    </div>
+</div>
+
+<!-- MODAL KERANJANG & CHECKOUT -->
+<div class="modal" id="modal-cart">
+    <div class="modal-content">
+        <h3>Detail Keranjang Pesanan</h3>
+        <div id="cart-items-container" style="margin: 15px 0;"></div>
+        
+        <div class="form-group">
+            <label>Metode Pembayaran</label>
+            <div class="radio-group">
+                <div class="radio-btn selected" id="pay-cash" onclick="selectPayment('Tunai')">Tunai (Cash)</div>
+                <div class="radio-btn" id="pay-qris" onclick="selectPayment('QRIS/Transfer')">QRIS / Transfer</div>
+            </div>
+        </div>
+
+        <button class="btn-full btn-primary" style="background:var(--success);" onclick="processCheckout()">Proses & Simpan Transaksi</button>
+        <button class="btn-full btn-secondary" onclick="closeModal('modal-cart')">Kembali</button>
+    </div>
+</div>
+
+<script>
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwaA6B07GZtwXmiXE49f8Qv6PBtviaU6iyjruGwu_vVZSybvTZ6tCwgoeVMzA0k-qym/exec";
+
+    let defaultProducts = [
+        {
+            id: 'p1',
+            name: 'Chicken Katsu',
+            hasSauce: true,
+            stock: 50,
+            basePrice: 15000,
+            tiers: [
+                { qty: 1, price: 15000 },
+                { qty: 2, price: 25000 }
+            ]
+        },
+        {
+            id: 'p2',
+            name: 'Risol Mayo',
+            hasSauce: false,
+            stock: 50,
+            basePrice: 3000,
+            tiers: [
+                { qty: 1, price: 3000 },
+                { qty: 4, price: 10000 }
+            ]
+        },
+        {
+            id: 'p3',
+            name: 'Risol Ragout Ayam',
+            hasSauce: false,
+            stock: 50,
+            basePrice: 3000,
+            tiers: [
+                { qty: 1, price: 3000 },
+                { qty: 4, price: 10000 }
+            ]
+        },
+        {
+            id: 'p4',
+            name: 'Risol Coklat Lumer',
+            hasSauce: false,
+            stock: 50,
+            basePrice: 3000,
+            tiers: [{ qty: 1, price: 3000 }]
+        },
+        {
+            id: 'p5',
+            name: 'Risol Sayur Pedas',
+            hasSauce: false,
+            stock: 50,
+            basePrice: 2500,
+            tiers: [{ qty: 1, price: 2500 }]
+        }
+    ];
+
+    let defaultSauces = [
+        { id: 's1', name: 'Saus BBQ', stock: 50 },
+        { id: 's2', name: 'Saus Lada Hitam', stock: 50 },
+        { id: 's3', name: 'Saus Keju', stock: 50 },
+        { id: 's4', name: 'Saus Mayo / Original', stock: 50 }
+    ];
+
+    let products = JSON.parse(localStorage.getItem('pos_products_v5')) || defaultProducts;
+    let sauces = JSON.parse(localStorage.getItem('pos_sauces_v5')) || defaultSauces;
+    let cart = [];
+    let historyData = JSON.parse(localStorage.getItem('pos_history_v5')) || [];
+    
+    let activeProdId = null;
+    let selectedKondisi = 'Matang';
+    let selectedPayment = 'Tunai';
+    let modalQty = 1;
+    let selectedSauceQty = {};
+
+    function saveState() {
+        localStorage.setItem('pos_products_v5', JSON.stringify(products));
+        localStorage.setItem('pos_sauces_v5', JSON.stringify(sauces));
+        localStorage.setItem('pos_history_v5', JSON.stringify(historyData));
+    }
+
+    function syncStockToCloud() {
+        if (GOOGLE_SHEET_URL) {
+            fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'update_stock',
+                    products: products,
+                    sauces: sauces
+                })
+            }).catch(err => console.error("Sync Stock Error", err));
+        }
+    }
+
+    function initUI() {
+        renderPOSGrid();
+        renderManageProducts();
+        renderManageSauces();
+        renderHistoryUI();
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.page-tab').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    function renderPOSGrid() {
+        const grid = document.getElementById('pos-product-grid');
+        grid.innerHTML = '';
+        products.forEach(p => {
+            grid.innerHTML += `
+                <div class="product-card" onclick="openProductModal('${p.id}')">
+                    <div class="product-title">${p.name}</div>
+                    <div class="product-price">Rp ${p.basePrice.toLocaleString()}</div>
+                    ${p.hasSauce ? '<span class="product-badge">+ Free Saus</span>' : ''}
+                    <div style="font-size:0.75rem; color:#6b7280; margin-top:4px;">Stok: ${p.stock}</div>
+                </div>
+            `;
+        });
+    }
+
+    // ALGORITMA KALKULATOR SMART TIER PROMO
+    function calculateAutoPrice(prod, qty) {
+        if (!prod.tiers || prod.tiers.length === 0) {
+            return { total: prod.basePrice * qty, info: '' };
+        }
+
+        let availableTiers = [...prod.tiers];
+        if (!availableTiers.some(t => t.qty === 1)) {
+            availableTiers.push({ qty: 1, price: prod.basePrice });
+        }
+        // Urutkan dari paket terbanyak
+        availableTiers.sort((a, b) => b.qty - a.qty);
+
+        let rem = qty;
+        let totalPrice = 0;
+        let breakdown = [];
+
+        for (let t of availableTiers) {
+            if (rem >= t.qty) {
+                let count = Math.floor(rem / t.qty);
+                totalPrice += count * t.price;
+                rem %= t.qty;
+                breakdown.push(`${count}x Paket (${t.qty} pcs = Rp ${t.price.toLocaleString()})`);
+            }
+        }
+
+        if (rem > 0) {
+            totalPrice += rem * prod.basePrice;
+            breakdown.push(`${rem}x Satuan (Rp ${prod.basePrice.toLocaleString()})`);
+        }
+
+        return {
+            total: totalPrice,
+            info: breakdown.join(' + ')
+        };
+    }
+
+    function openProductModal(id) {
+        activeProdId = id;
+        const prod = products.find(p => p.id === id);
+        modalQty = 1;
+        selectedKondisi = 'Matang';
+        selectedSauceQty = {};
+
+        document.getElementById('modal-product-title').innerText = prod.name;
+        selectKondisi('Matang');
+        renderTierButtons(prod);
+        
+        updateModalPriceAndQty();
+
+        if (prod.hasSauce) {
+            document.getElementById('sauce-selection-group').style.display = 'block';
+            renderSauceSelection();
+        } else {
+            document.getElementById('sauce-selection-group').style.display = 'none';
+        }
+
+        document.getElementById('modal-product').classList.add('active');
+    }
+
+    function updateModalPriceAndQty() {
+        const prod = products.find(p => p.id === activeProdId);
+        document.getElementById('modal-qty-val').innerText = modalQty;
+        
+        const priceResult = calculateAutoPrice(prod, modalQty);
+        document.getElementById('input-price').value = priceResult.total;
+        document.getElementById('promo-calc-info').innerText = priceResult.info ? `Skema: ${priceResult.info}` : '';
+    }
+
+    function renderSauceSelection() {
+        const container = document.getElementById('sauce-list-container');
+        container.innerHTML = '';
+        sauces.forEach(s => {
+            const qty = selectedSauceQty[s.id] || 0;
+            container.innerHTML += `
+                <div class="sauce-item-row">
+                    <div>
+                        <strong>${s.name}</strong> 
+                        <small style="color:${s.stock > 0 ? '#6b7280' : 'red'}; font-weight:bold;">(Stok: ${s.stock})</small>
+                    </div>
+                    <div class="qty-control">
+                        <button class="qty-btn" type="button" onclick="adjustSauceQty('${s.id}', -1)">-</button>
+                        <span style="font-weight:bold; padding:0 6px;">${qty}</span>
+                        <button class="qty-btn" type="button" onclick="adjustSauceQty('${s.id}', 1)">+</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function adjustSauceQty(sauceId, delta) {
+        const s = sauces.find(item => item.id === sauceId);
+        const current = selectedSauceQty[sauceId] || 0;
+        
+        if (delta > 0 && current + delta > s.stock) {
+            alert(`Stok ${s.name} tidak cukup! (Sisa stok: ${s.stock})`);
+            return;
+        }
+
+        if (current + delta >= 0) {
+            selectedSauceQty[sauceId] = current + delta;
+            renderSauceSelection();
+        }
+    }
+
+    function renderTierButtons(prod) {
+        const container = document.getElementById('tier-buttons-container');
+        container.innerHTML = '';
+        if(!prod.tiers || prod.tiers.length === 0) {
+            container.innerHTML = '<small style="color:#6b7280;">Harga standar.</small>';
+            return;
+        }
+
+        prod.tiers.forEach((t) => {
+            container.innerHTML += `
+                <button class="tier-btn" type="button" onclick="quickSelectQty(${t.qty})">
+                    Promo ${t.qty} Pcs = Rp ${t.price.toLocaleString()}
+                </button>
+            `;
+        });
+    }
+
+    function quickSelectQty(qty) {
+        modalQty = qty;
+        updateModalPriceAndQty();
+    }
+
+    function selectKondisi(val) {
+        selectedKondisi = val;
+        document.getElementById('opt-matang').className = `radio-btn ${val === 'Matang' ? 'selected' : ''}`;
+        document.getElementById('opt-mentah').className = `radio-btn ${val === 'Mentah' ? 'selected' : ''}`;
+    }
+
+    function adjustModalQty(delta) {
+        if(modalQty + delta >= 1) {
+            modalQty += delta;
+            updateModalPriceAndQty();
+        }
+    }
+
+    function confirmAddToCart() {
+        const prod = products.find(p => p.id === activeProdId);
+        const price = parseInt(document.getElementById('input-price').value) || 0;
+
+        if (prod.stock < modalQty) {
+            alert('Stok produk tidak mencukupi!');
+            return;
+        }
+
+        let chosenSauces = [];
+        if (prod.hasSauce) {
+            for (let sId in selectedSauceQty) {
+                if (selectedSauceQty[sId] > 0) {
+                    const s = sauces.find(item => item.id === sId);
+                    chosenSauces.push({ id: s.id, name: s.name, qty: selectedSauceQty[sId] });
+                }
+            }
+        }
+
+        cart.push({
+            prodId: prod.id,
+            name: prod.name,
+            kondisi: selectedKondisi,
+            chosenSauces: chosenSauces,
+            qty: modalQty,
+            price: price,
+            subtotal: price
+        });
+
+        closeModal('modal-product');
+        updateCartUI();
+    }
+
+    function updateCartUI() {
+        let totalQty = 0;
+        let totalPrice = 0;
+        cart.forEach(item => {
+            totalQty += item.qty;
+            totalPrice += item.subtotal;
+        });
+
+        document.getElementById('cart-item-count').innerText = `${totalQty} Item Pesanan`;
+        document.getElementById('cart-total-price').innerText = `Rp ${totalPrice.toLocaleString()}`;
+    }
+
+    function openCartModal() {
+        if(cart.length === 0) {
+            alert('Keranjang belanja masih kosong!');
+            return;
+        }
+
+        const container = document.getElementById('cart-items-container');
+        container.innerHTML = '';
+
+        cart.forEach((item, index) => {
+            let sauceStr = '';
+            if(item.chosenSauces && item.chosenSauces.length > 0) {
+                sauceStr = 'Saus: ' + item.chosenSauces.map(s => `${s.qty}x ${s.name}`).join(', ');
+            } else if (products.find(p => p.id === item.prodId)?.hasSauce) {
+                sauceStr = 'Tanpa Saus';
+            }
+
+            container.innerHTML += `
+                <div class="cart-item-row">
+                    <div>
+                        <strong>${item.name} (${item.kondisi})</strong><br>
+                        ${sauceStr ? `<small style="color:var(--primary); font-weight:bold;">${sauceStr}</small><br>` : ''}
+                        <small style="color:#6b7280;">${item.qty} Pcs</small>
+                    </div>
+                    <div style="text-align:right;">
+                        <strong style="color:var(--primary);">Rp ${item.subtotal.toLocaleString()}</strong><br>
+                        <button onclick="removeCartItem(${index})" style="background:none; border:none; color:#ef4444; font-size:0.75rem; cursor:pointer; font-weight:bold;">Hapus ✕</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        selectPayment('Tunai');
+        document.getElementById('modal-cart').classList.add('active');
+    }
+
+    function removeCartItem(index) {
+        cart.splice(index, 1);
+        if(cart.length === 0) {
+            closeModal('modal-cart');
+        } else {
+            openCartModal();
+        }
+        updateCartUI();
+    }
+
+    function selectPayment(type) {
+        selectedPayment = type;
+        document.getElementById('pay-cash').className = `radio-btn ${type === 'Tunai' ? 'selected' : ''}`;
+        document.getElementById('pay-qris').className = `radio-btn ${type === 'QRIS/Transfer' ? 'selected' : ''}`;
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+
+    async function processCheckout() {
+        const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+
+        // Potong Stok
+        cart.forEach(item => {
+            const p = products.find(prod => prod.id === item.prodId);
+            if(p) p.stock -= item.qty;
+
+            if(item.chosenSauces) {
+                item.chosenSauces.forEach(cs => {
+                    const s = sauces.find(sauce => sauce.id === cs.id);
+                    if(s) s.stock -= cs.qty;
+                });
+            }
+        });
+        saveState();
+
+        const itemsSummary = cart.map(i => {
+            let sauceInfo = i.chosenSauces && i.chosenSauces.length > 0 ? ` (Saus: ${i.chosenSauces.map(s => s.qty + 'x ' + s.name).join(', ')})` : '';
+            return `${i.name} [${i.kondisi}${sauceInfo}] x${i.qty}`;
+        }).join(' | ');
+
+        const transactionData = {
+            id: 'TRX-' + Date.now().toString().slice(-6),
+            date: new Date().toLocaleString('id-ID'),
+            itemsSummary: itemsSummary,
+            itemsList: cart,
+            total: total,
+            payment: selectedPayment,
+            products: products,
+            sauces: sauces
+        };
+
+        historyData.unshift(transactionData);
+        saveState();
+
+        if (GOOGLE_SHEET_URL) {
+            fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(transactionData)
+            }).catch(err => console.error("Cloud Error", err));
+        }
+
+        alert('Transaksi Berhasil Selesai & Tersimpan!');
+        cart = [];
+        closeModal('modal-cart');
+        updateCartUI();
+        initUI();
+    }
+
+    // --- MANAJEMEN SAUS ---
+    function renderManageSauces() {
+        const container = document.getElementById('manage-sauce-list');
+        container.innerHTML = '';
+        sauces.forEach((s) => {
+            container.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border);">
+                    <span><strong>${s.name}</strong></span>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="number" value="${s.stock}" onchange="updateSauceStock('${s.id}', this.value)" style="width:70px; padding:4px;">
+                        <button class="btn-danger" style="padding:4px 8px; font-size:0.75rem; border-radius:6px;" onclick="deleteSauce('${s.id}')">Hapus</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function addNewSauce() {
+        const name = document.getElementById('new-sauce-name').value;
+        const stock = parseInt(document.getElementById('new-sauce-stock').value) || 0;
+        if(!name) { alert('Masukkan nama saus!'); return; }
+        
+        sauces.push({ id: 's_' + Date.now(), name: name, stock: stock });
+        saveState();
+        syncStockToCloud();
+        renderManageSauces();
+        document.getElementById('new-sauce-name').value = '';
+        document.getElementById('new-sauce-stock').value = '';
+    }
+
+    function updateSauceStock(id, val) {
+        const s = sauces.find(item => item.id === id);
+        if(s) {
+            s.stock = parseInt(val) || 0;
+            saveState();
+            syncStockToCloud();
+        }
+    }
+
+    function deleteSauce(id) {
+        if(confirm('Hapus jenis saus ini?')) {
+            sauces = sauces.filter(s => s.id !== id);
+            saveState();
+            syncStockToCloud();
+            renderManageSauces();
+        }
+    }
+
+    // --- MANAJEMEN PRODUK & PAKET HARGA ---
+    function addNewProduct() {
+        const name = document.getElementById('new-prod-name').value;
+        const hasSauce = document.getElementById('new-prod-sauce').value === 'true';
+        const price = parseInt(document.getElementById('new-prod-price').value) || 0;
+        const stock = parseInt(document.getElementById('new-prod-stock').value) || 0;
+
+        if(!name || price <= 0) {
+            alert('Lengkapi nama dan harga produk!');
+            return;
+        }
+
+        const newProd = {
+            id: 'p_' + Date.now(),
+            name: name,
+            hasSauce: hasSauce,
+            stock: stock,
+            basePrice: price,
+            tiers: [{ qty: 1, price: price }]
+        };
+
+        products.push(newProd);
+        saveState();
+        syncStockToCloud();
+        initUI();
+
+        document.getElementById('new-prod-name').value = '';
+        document.getElementById('new-prod-price').value = '';
+        alert('Produk baru berhasil ditambahkan!');
+    }
+
+    function renderManageProducts() {
+        const container = document.getElementById('manage-products-list');
+        container.innerHTML = '';
+
+        products.forEach((p) => {
+            let tiersHtml = '';
+            if(p.tiers) {
+                p.tiers.forEach((t, tIdx) => {
+                    tiersHtml += `
+                        <span style="background:#f3f4f6; padding:3px 8px; border-radius:6px; font-size:0.8rem; margin-right:4px;">
+                            ${t.qty} Pcs = Rp ${t.price.toLocaleString()}
+                            <a href="#" onclick="deleteTier('${p.id}', ${tIdx})" style="color:red; margin-left:4px; text-decoration:none;">✕</a>
+                        </span>
+                    `;
+                });
+            }
+
+            container.innerHTML += `
+                <div style="border-bottom: 1px solid var(--border); padding: 12px 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>${p.name} ${p.hasSauce ? '(Free Saus)' : ''}</strong>
+                        <button class="btn-danger" style="padding:4px 8px; font-size:0.75rem; border-radius:6px;" onclick="deleteProduct('${p.id}')">Hapus</button>
+                    </div>
+
+                    <div style="display:flex; gap:10px; margin: 8px 0;">
+                        <div>
+                            <small style="color:#6b7280;">Harga Satuan (Rp)</small>
+                            <input type="number" value="${p.basePrice}" onchange="updateBasePrice('${p.id}', this.value)" style="padding:6px;">
+                        </div>
+                        <div>
+                            <small style="color:#6b7280;">Stok</small>
+                            <input type="number" value="${p.stock}" onchange="updateStock('${p.id}', this.value)" style="padding:6px;">
+                        </div>
+                    </div>
+
+                    <div style="margin-top:6px;">
+                        <small style="color:#6b7280; display:block; margin-bottom:4px;">Paket / Kelipatan Harga (Promo):</small>
+                        <div style="margin-bottom:6px;">${tiersHtml}</div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <input type="number" id="tier-qty-${p.id}" placeholder="Jumlah Pcs" style="width:100px; padding:6px;">
+                            <input type="number" id="tier-price-${p.id}" placeholder="Total Harga (Rp)" style="padding:6px;">
+                            <button class="btn-primary" style="padding:6px 10px; font-size:0.8rem; border-radius:6px; width:auto;" onclick="addTier('${p.id}')">+ Paket</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function updateBasePrice(id, val) {
+        const p = products.find(item => item.id === id);
+        if(p) {
+            p.basePrice = parseInt(val) || 0;
+            saveState();
+            renderPOSGrid();
+        }
+    }
+
+    function updateStock(id, val) {
+        const p = products.find(item => item.id === id);
+        if(p) {
+            p.stock = parseInt(val) || 0;
+            saveState();
+            syncStockToCloud();
+            renderPOSGrid();
+        }
+    }
+
+    function addTier(id) {
+        const qty = parseInt(document.getElementById(`tier-qty-${id}`).value);
+        const price = parseInt(document.getElementById(`tier-price-${id}`).value);
+        if(!qty || !price) { alert('Isi Jumlah Pcs dan Total Harganya!'); return; }
+
+        const p = products.find(item => item.id === id);
+        if(p) {
+            if(!p.tiers) p.tiers = [];
+            p.tiers.push({ qty: qty, price: price });
+            p.tiers.sort((a, b) => a.qty - b.qty);
+            saveState();
+            renderManageProducts();
+        }
+    }
+
+    function deleteTier(id, tIdx) {
+        const p = products.find(item => item.id === id);
+        if(p && p.tiers) {
+            p.tiers.splice(tIdx, 1);
+            saveState();
+            renderManageProducts();
+        }
+    }
+
+    function deleteProduct(id) {
+        if(confirm('Yakin ingin menghapus produk ini?')) {
+            products = products.filter(p => p.id !== id);
+            saveState();
+            syncStockToCloud();
+            initUI();
+        }
+    }
+
+    function renderHistoryUI() {
+        const container = document.getElementById('history-container');
+        container.innerHTML = '';
+        if(historyData.length === 0) {
+            container.innerHTML = '<p style="color:#6b7280; font-size:0.9rem;">Belum ada riwayat transaksi.</p>';
+            return;
+        }
+
+        historyData.forEach(tx => {
+            container.innerHTML += `
+                <div style="padding:10px 0; border-bottom:1px solid var(--border);">
+                    <div style="display:flex; justify-content:space-between;">
+                        <small style="color:#6b7280;">${tx.date} - <strong>${tx.id}</strong></small>
+                        <small style="background:#ffedd5; color:#c2410c; padding:2px 6px; border-radius:4px; font-weight:bold;">${tx.payment}</small>
+                    </div>
+                    <div style="font-size:0.85rem; margin:4px 0;">${tx.itemsSummary}</div>
+                    <div style="font-weight:bold; color:var(--primary);">Total: Rp ${tx.total.toLocaleString()}</div>
+                </div>
+            `;
+        });
+    }
+
+    initUI();
+</script>
+</body>
+</html>
